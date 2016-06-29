@@ -1,6 +1,6 @@
 ﻿using System;
-using ResxCleaner.Model;
 using ResxCleaner.Properties;
+using ResxCleaner.ViewModel;
 
 namespace ResxCleaner.View
 {

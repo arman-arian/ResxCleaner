@@ -16,7 +16,7 @@ using ResxCleaner.Properties;
 using ResxCleaner.Services;
 using ResxCleaner.View;
 
-namespace ResxCleaner.Model
+namespace ResxCleaner.ViewModel
 {
     public class MainViewModel : ViewModelBase
     {
