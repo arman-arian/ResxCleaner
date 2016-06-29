@@ -1,13 +1,13 @@
 ﻿using System.Runtime.InteropServices;
 using System.Windows;
 
-namespace ResxCleaner
+namespace ResxCleaner.Services
 {
     public static class ClipboardService
     {
         public static bool SetText(string text)
         {
-            for (int i = 0; i < 5; i++)
+            for (var i = 0; i < 5; i++)
             {
                 try
                 {

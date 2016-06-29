@@ -1,18 +1,17 @@
 ﻿using System;
-using System.Windows;
+using ResxCleaner.Model;
 using ResxCleaner.Properties;
 
-namespace ResxCleaner
+namespace ResxCleaner.View
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         public MainWindow()
         {
             this.InitializeComponent();
-
             this.DataContext = new MainViewModel();
         }
 
@@ -21,11 +20,10 @@ namespace ResxCleaner
             Settings.Default.MainWindowPlacement = this.GetPlacement();
 
             var vm = this.DataContext as MainViewModel;
-            vm.OnClose();
+            vm?.OnClose();
 
             Settings.Default.KeyColumnWidth = this.keyColumn.ActualWidth;
             Settings.Default.ValueColumnWidth = this.valueColumn.ActualWidth;
-
             Settings.Default.Save();
         }
 

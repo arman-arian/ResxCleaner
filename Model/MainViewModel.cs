@@ -13,8 +13,10 @@ using GalaSoft.MvvmLight.Command;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using ResxCleaner.Exceptions;
 using ResxCleaner.Properties;
+using ResxCleaner.Services;
+using ResxCleaner.View;
 
-namespace ResxCleaner
+namespace ResxCleaner.Model
 {
     public class MainViewModel : ViewModelBase
     {
@@ -137,21 +139,20 @@ namespace ResxCleaner
                 return this.browseFolderCommand ?? (this.browseFolderCommand = new RelayCommand(
                     () =>
                     {
-                        var dialog = new CommonOpenFileDialog();
-                        dialog.IsFolderPicker = true;
-                        dialog.EnsurePathExists = true;
-                        dialog.EnsureValidNames = true;
-                        dialog.Multiselect = false;
+                        var dialog = new CommonOpenFileDialog
+                        {
+                            IsFolderPicker = true,
+                            EnsurePathExists = true,
+                            EnsureValidNames = true,
+                            Multiselect = false
+                        };
 
                         if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
                         {
                             this.ProjectFolder = dialog.FileName;
                         }
                     },
-                    () =>
-                    {
-                        return !this.Working;
-                    }));
+                    () => !this.Working));
             }
         }
 
@@ -164,11 +165,13 @@ namespace ResxCleaner
                 return this.browseResourceFileCommand ?? (this.browseResourceFileCommand = new RelayCommand(
                     () =>
                     {
-                        var dialog = new CommonOpenFileDialog();
-                        dialog.IsFolderPicker = false;
-                        dialog.EnsurePathExists = true;
-                        dialog.EnsureValidNames = true;
-                        dialog.Multiselect = false;
+                        var dialog = new CommonOpenFileDialog
+                        {
+                            IsFolderPicker = false,
+                            EnsurePathExists = true,
+                            EnsureValidNames = true,
+                            Multiselect = false
+                        };
                         dialog.Filters.Add(new CommonFileDialogFilter("RESX file", ".resx"));
 
                         if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
@@ -176,10 +179,7 @@ namespace ResxCleaner
                             this.ResourceFile = dialog.FileName;
                         }
                     },
-                    () =>
-                    {
-                        return !this.Working;
-                    }));
+                    () => !this.Working));
             }
         }
 
@@ -197,10 +197,7 @@ namespace ResxCleaner
                             this.RefreshUnusedList();
                         });
                     },
-                    () =>
-                    {
-                        return !this.Working;
-                    }));
+                    () => !this.Working));
             }
         }
 
@@ -213,16 +210,13 @@ namespace ResxCleaner
                 return this.copyCommand ?? (this.copyCommand = new RelayCommand(
                     () =>
                     {
-                        string clipboardText = string.Join(Environment.NewLine, this.UnusedResources.Select(r => r.Key));
+                        var clipboardText = string.Join(Environment.NewLine, this.UnusedResources.Select(r => r.Key));
                         if (ClipboardService.SetText(clipboardText))
                         {
                             MessageBox.Show("Copied " + this.UnusedResources.Count + " key(s) to the clipboard.");
                         }
                     },
-                    () =>
-                    {
-                        return !this.Working && this.UnusedResources != null && this.UnusedResources.Count > 0;
-                    }));
+                    () => !this.Working && this.UnusedResources != null && this.UnusedResources.Count > 0));
             }
         }
 
@@ -237,10 +231,7 @@ namespace ResxCleaner
                     {
                         this.Delete(new HashSet<string>(this.UnusedResources.Where(r => r.IsSelected).Select(r => r.Key)));
                     },
-                    () =>
-                    {
-                        return !this.Working;
-                    }));
+                    () => !this.Working));
             }
         }
 
@@ -261,10 +252,7 @@ namespace ResxCleaner
                             });
                         }
                     },
-                    () =>
-                    {
-                        return !this.Working && this.UnusedResources != null && this.UnusedResources.Count > 0;
-                    }));
+                    () => !this.Working && this.UnusedResources != null && this.UnusedResources.Count > 0));
             }
         }
 
@@ -289,10 +277,7 @@ namespace ResxCleaner
                         this.CopyCommand.RaiseCanExecuteChanged();
                         this.DeleteAllCommand.RaiseCanExecuteChanged();
                     },
-                    () =>
-                    {
-                        return !this.Working;
-                    }));
+                    () => !this.Working));
             }
         }
 
@@ -335,25 +320,15 @@ namespace ResxCleaner
             this.Status = "Populating search list...";
 
             this.resourceKeys = new HashSet<string>();
-            this.excludePrefixesList = this.ExcludePrefixes == null ? 
-                new List<string>() :
-                this.ExcludePrefixes.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).ToList();
+            this.excludePrefixesList = this.ExcludePrefixes?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).ToList() ?? new List<string>();
 
             this.resourceDocument = XDocument.Load(this.ResourceFile);
 
             ForEveryDataElement(this.resourceDocument, dataElement =>
             {
-                string name = GetName(dataElement);
+                var name = GetName(dataElement);
 
-                bool addName = true;
-                foreach (string excludedPrefix in this.excludePrefixesList)
-                {
-                    if (name.StartsWith(excludedPrefix))
-                    {
-                        addName = false;
-                        break;
-                    }
-                }
+                var addName = this.excludePrefixesList.All(excludedPrefix => !name.StartsWith(excludedPrefix));
 
                 if (addName)
                 {
@@ -370,14 +345,14 @@ namespace ResxCleaner
 
             this.referenceFormatList = this.ReferenceFormats.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).ToList();
 
-            foreach (string file in this.files)
+            foreach (var file in this.files)
             {
                 this.RemoveFoundKeys(file);
             }
 
             // Remaining keys are unused
             var newUnusedResources = new ObservableCollection<StringResource>();
-            foreach (string unusedKey in this.resourceKeys)
+            foreach (var unusedKey in this.resourceKeys)
             {
                 newUnusedResources.Add(new StringResource { Key = unusedKey });
             }
@@ -440,19 +415,12 @@ namespace ResxCleaner
 
         private void PopulateFileList(string directoryPath)
         {
-            foreach (string file in Directory.GetFiles(directoryPath))
+            foreach (var file in Directory.GetFiles(directoryPath).Where(file => this.extensionList.Any(file.EndsWith)))
             {
-                foreach (string extension in this.extensionList)
-                {
-                    if (file.EndsWith(extension))
-                    {
-                        this.files.Add(file);
-                        break;
-                    }
-                }
+                this.files.Add(file);
             }
 
-            foreach (string subDirectory in Directory.GetDirectories(directoryPath))
+            foreach (var subDirectory in Directory.GetDirectories(directoryPath))
             {
                 this.PopulateFileList(subDirectory);
             }
@@ -461,24 +429,10 @@ namespace ResxCleaner
         // Finds instances of resourceKeys in the given file and removes them from the collection if they are found
         private void RemoveFoundKeys(string filePath)
         {
-            string fileText = File.ReadAllText(filePath);
-            var foundResources = new List<string>();
+            var fileText = File.ReadAllText(filePath);
+            var foundResources = this.resourceKeys.Where(key => this.referenceFormatList.Select(referenceFormat => referenceFormat.Replace("%", key)).Any(searchString => fileText.Contains(searchString))).ToList();
 
-            foreach (string key in this.resourceKeys)
-            {
-                foreach (string referenceFormat in this.referenceFormatList)
-                {
-                    string searchString = referenceFormat.Replace("%", key);
-
-                    if (fileText.Contains(searchString))
-                    {
-                        foundResources.Add(key);
-                        break;
-                    }
-                }
-            }
-
-            foreach (string key in foundResources)
+            foreach (var key in foundResources)
             {
                 this.resourceKeys.Remove(key);
             }
@@ -490,7 +444,7 @@ namespace ResxCleaner
             {
                 this.Working = true;
 
-                int count = stringsToDelete.Count;
+                var count = stringsToDelete.Count;
                 this.Status = "Deleting " + count + " unused resource(s)...";
 
                 RemoveResourcecFiles();
@@ -522,14 +476,14 @@ namespace ResxCleaner
                 }
 
                 // Remove them from the collections
-                foreach (string deletedKey in stringsToDelete)
+                foreach (var deletedKey in stringsToDelete)
                 {
                     this.resourceKeys.Remove(deletedKey);
                 }
 
                 DispatchService.BeginInvoke(() =>
                 {
-                    for (int i = this.UnusedResources.Count - 1; i >= 0; i--)
+                    for (var i = this.UnusedResources.Count - 1; i >= 0; i--)
                     {
                         if (stringsToDelete.Contains(this.UnusedResources[i].Key))
                         {

@@ -1,4 +1,4 @@
-﻿namespace ResxCleaner
+﻿namespace ResxCleaner.View
 {
     public class StringResource
     {

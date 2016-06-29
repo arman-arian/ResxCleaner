@@ -7,7 +7,7 @@ using System.Windows.Interop;
 using System.Xml;
 using System.Xml.Serialization;
 
-namespace ResxCleaner
+namespace ResxCleaner.View
 {
     // RECT structure required by WINDOWPLACEMENT structure
     [Serializable]
@@ -58,8 +58,8 @@ namespace ResxCleaner
 
     public static class WindowPlacement
     {
-        private static Encoding encoding = new UTF8Encoding();
-        private static XmlSerializer serializer = new XmlSerializer(typeof(WINDOWPLACEMENT));
+        private static readonly Encoding encoding = new UTF8Encoding();
+        private static readonly XmlSerializer serializer = new XmlSerializer(typeof(WINDOWPLACEMENT));
 
         [DllImport("user32.dll")]
         private static extern bool SetWindowPlacement(IntPtr hWnd, [In] ref WINDOWPLACEMENT lpwndpl);
@@ -77,12 +77,12 @@ namespace ResxCleaner
                 return;
             }
 
-            WINDOWPLACEMENT placement;
-            byte[] xmlBytes = encoding.GetBytes(placementXml);
+            var xmlBytes = encoding.GetBytes(placementXml);
 
             try
             {
-                using (MemoryStream memoryStream = new MemoryStream(xmlBytes))
+                WINDOWPLACEMENT placement;
+                using (var memoryStream = new MemoryStream(xmlBytes))
                 {
                     placement = (WINDOWPLACEMENT)serializer.Deserialize(memoryStream);
                 }
@@ -106,12 +106,12 @@ namespace ResxCleaner
                 placement = new WINDOWPLACEMENT();
             }
 
-            using (MemoryStream memoryStream = new MemoryStream())
+            using (var memoryStream = new MemoryStream())
             {
-                using (XmlTextWriter xmlTextWriter = new XmlTextWriter(memoryStream, Encoding.UTF8))
+                using (var xmlTextWriter = new XmlTextWriter(memoryStream, Encoding.UTF8))
                 {
                     serializer.Serialize(xmlTextWriter, placement);
-                    byte[] xmlBytes = memoryStream.ToArray();
+                    var xmlBytes = memoryStream.ToArray();
                     return encoding.GetString(xmlBytes);
                 }
             }

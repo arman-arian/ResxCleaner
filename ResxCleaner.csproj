@@ -113,13 +113,13 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="ClipboardService.cs" />
-    <Compile Include="DispatchService.cs" />
+    <Compile Include="Services\ClipboardService.cs" />
+    <Compile Include="Services\DispatchService.cs" />
     <Compile Include="Exceptions\FileException.cs" />
     <Compile Include="Exceptions\ParseException.cs" />
-    <Compile Include="StringResource.cs" />
-    <Compile Include="WindowPlacement.cs" />
-    <Page Include="MainWindow.xaml">
+    <Compile Include="View\StringResource.cs" />
+    <Compile Include="View\WindowPlacement.cs" />
+    <Page Include="View\MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -127,8 +127,8 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="MainViewModel.cs" />
-    <Compile Include="MainWindow.xaml.cs">
+    <Compile Include="Model\MainViewModel.cs" />
+    <Compile Include="View\MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
@@ -187,6 +187,7 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
