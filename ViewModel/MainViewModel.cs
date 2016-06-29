@@ -595,6 +595,8 @@ namespace ResxCleaner.ViewModel
 
                 try
                 {
+                    BackupBeforeDeleteResource(filePath);
+
                     File.Delete(filePath);
                 }
                 catch (IOException ex)
@@ -605,6 +607,23 @@ namespace ResxCleaner.ViewModel
                 {
                     throw new FileException("Error deleting resource file.", exception);
                 }
+            }
+        }
+
+        private void BackupBeforeDeleteResource(string filePath)
+        {
+            try
+            {
+                if (filePath == null)
+                    return;
+                var deletedPath = Path.Combine(ProjectFolder, "DeletedResources");
+                if (!Directory.Exists(deletedPath))
+                    Directory.CreateDirectory(Path.Combine(ProjectFolder, "DeletedResources"));
+                File.Copy(Path.Combine(filePath), Path.Combine(deletedPath, Path.GetFileName(filePath)), true);
+            }
+            catch (Exception)
+            {
+                //ignored
             }
         }
 
