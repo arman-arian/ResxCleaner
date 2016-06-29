@@ -10,6 +10,7 @@
     Height="450"
     MinWidth="600"
     MinHeight="300"
+    WindowStartupLocation="CenterScreen"
     Closing="Window_Closing">
     <Window.Resources>
         <Style x:Key="FieldLabel" TargetType="TextBlock">

@@ -20,7 +20,7 @@ namespace ResxCleaner.View
             Settings.Default.MainWindowPlacement = this.GetPlacement();
 
             var vm = this.DataContext as MainViewModel;
-            vm?.OnClose();
+            vm.OnClose();
 
             Settings.Default.KeyColumnWidth = this.keyColumn.ActualWidth;
             Settings.Default.ValueColumnWidth = this.valueColumn.ActualWidth;

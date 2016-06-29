@@ -247,9 +247,13 @@ namespace ResxCleaner.ViewModel
                     {
                         if (MessageBox.Show("Are you sure you want to delete " + this.UnusedResources.Count + " resources?", "Confirm delete", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                         {
+                            var backupStatus =
+                                MessageBox.Show("Do you want to backup deleted resources?", "Backup deleted resources",
+                                    MessageBoxButton.YesNo) == MessageBoxResult.Yes;
+
                             Task.Run(() =>
                             {
-                                this.Delete(new HashSet<string>(this.resourceKeys));
+                                this.Delete(new HashSet<string>(this.resourceKeys), backupStatus);
                             });
                         }
                     },
@@ -321,7 +325,7 @@ namespace ResxCleaner.ViewModel
             this.Status = "Populating search list...";
 
             this.resourceKeys = new HashSet<string>();
-            this.excludePrefixesList = this.ExcludePrefixes?.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).ToList() ?? new List<string>();
+            this.excludePrefixesList = this.ExcludePrefixes.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).ToList();
 
             this.resourceDocument = XDocument.Load(this.ResourceFile);
 
@@ -439,7 +443,7 @@ namespace ResxCleaner.ViewModel
             }
         }
 
-        private void Delete(HashSet<string> stringsToDelete)
+        private void Delete(HashSet<string> stringsToDelete, bool backup = false)
         {
             try
             {
@@ -450,7 +454,7 @@ namespace ResxCleaner.ViewModel
 
                 RemoveFromResx(stringsToDelete);
                 RemoveFromProject(stringsToDelete);
-                RemoveFromResourceFolder(stringsToDelete);
+                RemoveFromResourceFolder(stringsToDelete, backup);
                 RemoveFromResourceKeys(stringsToDelete);
                 RemoveFromUnusedResources(stringsToDelete);
 
@@ -578,7 +582,8 @@ namespace ResxCleaner.ViewModel
         /// Remove From Resource Folder
         /// </summary>
         /// <param name="stringsToDelete"></param>
-        private void RemoveFromResourceFolder(HashSet<string> stringsToDelete)
+        /// <param name="backup"></param>
+        private void RemoveFromResourceFolder(HashSet<string> stringsToDelete, bool backup = false)
         {
             var resourceFolder = Directory.GetDirectories(this.ProjectFolder)
                 .FirstOrDefault(s => Path.GetFileName((s ?? string.Empty).TrimEnd('\\')) == "Resources");
@@ -595,7 +600,8 @@ namespace ResxCleaner.ViewModel
 
                 try
                 {
-                    BackupBeforeDeleteResource(filePath);
+                    if(backup)
+                        BackupBeforeDeleteResource(filePath);
 
                     File.Delete(filePath);
                 }
