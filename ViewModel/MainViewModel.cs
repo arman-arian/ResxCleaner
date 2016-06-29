@@ -10,6 +10,7 @@ using System.Xml;
 using System.Xml.Linq;
 using GalaSoft.MvvmLight;
 using GalaSoft.MvvmLight.Command;
+using Microsoft.Build.Evaluation;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using ResxCleaner.Exceptions;
 using ResxCleaner.Properties;
@@ -447,53 +448,13 @@ namespace ResxCleaner.ViewModel
                 var count = stringsToDelete.Count;
                 this.Status = "Deleting " + count + " unused resource(s)...";
 
-                RemoveResourcecFiles();
-
-                var document = XDocument.Load(this.ResourceFile);
-                ForEveryDataElement(document, dataElement =>
-                {
-                    if (stringsToDelete.Contains(GetName(dataElement)))
-                    {
-                        dataElement.Remove();
-                    }
-                });
-
-                try
-                {
-                    document.Save(this.ResourceFile);
-                }
-                catch (IOException exception)
-                {
-                    throw new FileException("Error saving resource file.", exception);
-                }
-                catch (UnauthorizedAccessException exception)
-                {
-                    throw new FileException("Error saving resource file.", exception);
-                }
-                catch (XmlException exception)
-                {
-                    throw new FileException("Error saving resource file.", exception);
-                }
-
-                // Remove them from the collections
-                foreach (var deletedKey in stringsToDelete)
-                {
-                    this.resourceKeys.Remove(deletedKey);
-                }
-
-                DispatchService.BeginInvoke(() =>
-                {
-                    for (var i = this.UnusedResources.Count - 1; i >= 0; i--)
-                    {
-                        if (stringsToDelete.Contains(this.UnusedResources[i].Key))
-                        {
-                            this.UnusedResources.RemoveAt(i);
-                        }
-                    }
-                });
+                RemoveFromResx(stringsToDelete);
+                RemoveFromProject(stringsToDelete);
+                RemoveFromResourceFolder(stringsToDelete);
+                RemoveFromResourceKeys(stringsToDelete);
+                RemoveFromUnusedResources(stringsToDelete);
 
                 this.Status = "Deleted " + count + " unused resource(s).";
-
                 this.Working = false;
             }
             catch (FileException exception)
@@ -506,16 +467,144 @@ namespace ResxCleaner.ViewModel
             }
         }
 
-        private void RemoveResourcecFiles()
-        { 
-            var resourceFolder = Directory.GetDirectories(this.ProjectFolder).FirstOrDefault(s => s.EndsWith("Resources"));
-            if(resourceFolder == null) return;
-            foreach (var t in this.UnusedResources)
+        /// <summary>
+        /// Remove from unused resources
+        /// </summary>
+        /// <param name="stringsToDelete"></param>
+        public void RemoveFromUnusedResources(HashSet<string> stringsToDelete)
+        {
+            DispatchService.BeginInvoke(() =>
             {
-                var val = t.Value;
-                var fileName = Path.GetFileName(val.Substring(0, val.IndexOf(";", StringComparison.Ordinal)));
+                for (var i = this.UnusedResources.Count - 1; i >= 0; i--)
+                {
+                    if (stringsToDelete.Contains(this.UnusedResources[i].Key))
+                    {
+                        this.UnusedResources.RemoveAt(i);
+                    }
+                }
+            });
+        }
+
+        /// <summary>
+        /// Remove from the collections
+        /// </summary>
+        /// <param name="stringsToDelete"></param>
+        public void RemoveFromResourceKeys(HashSet<string> stringsToDelete)
+        {
+            foreach (var deletedKey in stringsToDelete)
+            {
+                this.resourceKeys.Remove(deletedKey);
+            }
+        }
+
+        /// <summary>
+        /// Remove From Resouce File
+        /// </summary>
+        /// <param name="stringsToDelete"></param>
+        public void RemoveFromResx(HashSet<string> stringsToDelete)
+        {
+            var document = XDocument.Load(this.ResourceFile);
+            ForEveryDataElement(document, dataElement =>
+            {
+                if (stringsToDelete.Contains(GetName(dataElement)))
+                {
+                    dataElement.Remove();
+                }
+            });
+
+            try
+            {
+                document.Save(this.ResourceFile);
+            }
+            catch (IOException ex)
+            {
+                throw new FileException("Error saving resource file.", ex);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                throw new FileException("Error saving resource file.", ex);
+            }
+            catch (XmlException ex)
+            {
+                throw new FileException("Error saving resource file.", ex);
+            }
+        }
+
+        /// <summary>
+        /// Remove From Project
+        /// </summary>
+        /// <param name="stringsToDelete"></param>
+        private void RemoveFromProject(HashSet<string> stringsToDelete)
+        {
+            var projectFile = Directory.GetFiles(ProjectFolder, "*.csproj").FirstOrDefault();
+            if (projectFile == null)
+            {
+                throw new ParseException("No project file found.");
+            }
+
+            var project = new Project(projectFile);
+            var noneItemGroups = project.GetItems("None").ToList();
+            for (var i = noneItemGroups.Count - 1; i >= 0; i--)
+            {
+
+                var item = noneItemGroups.ElementAt(i);
+                if (UnusedResources.Where(a => stringsToDelete.Contains(a.Key))
+                                   .Select(ur => ur.Value.ToString())
+                                   .Any(a => a.Contains(item.EvaluatedInclude)))
+                {
+                   project.RemoveItem(item);
+                }
+            }
+
+            try
+            {
+               project.Save();
+            }
+            catch (IOException ex)
+            {
+                throw new FileException("Error saving project file.", ex);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                throw new FileException("Error saving project file.", ex);
+            }
+            catch (XmlException ex)
+            {
+                throw new FileException("Error saving project file.", ex);
+            }
+        }
+
+        /// <summary>
+        /// Remove From Resource Folder
+        /// </summary>
+        /// <param name="stringsToDelete"></param>
+        private void RemoveFromResourceFolder(HashSet<string> stringsToDelete)
+        {
+            var resourceFolder = Directory.GetDirectories(this.ProjectFolder)
+                .FirstOrDefault(s => Path.GetFileName((s ?? string.Empty).TrimEnd('\\')) == "Resources");
+            if (resourceFolder == null)
+            {
+                throw new ParseException("No resource folder found.");
+            }
+
+            foreach (var resource in this.UnusedResources.Where(a => stringsToDelete.Contains(a.Key)))
+            {
+                var resourceValue = resource.Value;
+                var fileName = Path.GetFileName(resourceValue.Substring(0, resourceValue.IndexOf(";", StringComparison.Ordinal)));
                 var filePath = Path.Combine(resourceFolder, fileName);
-                File.Delete(filePath);
+
+                try
+                {
+                    File.Delete(filePath);
+                }
+                catch (IOException ex)
+                {
+                    throw new FileException("Error deleting resource file.", ex);
+                }
+                catch (UnauthorizedAccessException exception)
+                {
+                    throw new FileException("Error deleting resource file.", exception);
+                }
             }
         }
 
