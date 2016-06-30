@@ -43,7 +43,7 @@ namespace ResxCleaner.ViewModel
 
             if (string.IsNullOrEmpty(this.ReferenceFormats))
             {
-                this.ReferenceFormats = "AppResources.%";
+                this.ReferenceFormats = "AppResources.%;,AppResources.% ,AppResources.%)";
             }
         }
 
@@ -178,6 +178,7 @@ namespace ResxCleaner.ViewModel
                         if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
                         {
                             this.ResourceFile = dialog.FileName;
+                            this.ReferenceFormats = string.Format("{0}.%;,{0}.% ,{0}.%)", Path.GetFileNameWithoutExtension(dialog.FileName));
                         }
                     },
                     () => !this.Working));
@@ -435,6 +436,7 @@ namespace ResxCleaner.ViewModel
         private void RemoveFoundKeys(string filePath)
         {
             var fileText = File.ReadAllText(filePath);
+
             var foundResources = this.resourceKeys.Where(key => this.referenceFormatList.Select(referenceFormat => referenceFormat.Replace("%", key)).Any(searchString => fileText.Contains(searchString))).ToList();
 
             foreach (var key in foundResources)
