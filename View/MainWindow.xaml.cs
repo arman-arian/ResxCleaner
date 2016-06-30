@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using ResxCleaner.Properties;
 using ResxCleaner.ViewModel;
 
@@ -13,7 +14,16 @@ namespace ResxCleaner.View
         {
             this.InitializeComponent();
             this.DataContext = new MainViewModel();
+            this.SetVersionToTitle();
         }
+
+        private void SetVersionToTitle()
+        {
+            var version = Assembly.GetExecutingAssembly().GetName().Version;
+            this.Title = string.Format("{0} v{1}.{2}.{3}.{4}", 
+                this.Title, version.Major, version.Minor, version.MajorRevision, version.MinorRevision);
+        }
+
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
