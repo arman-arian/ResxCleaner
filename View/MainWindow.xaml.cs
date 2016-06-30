@@ -13,8 +13,8 @@ namespace ResxCleaner.View
         public MainWindow()
         {
             this.InitializeComponent();
-            this.DataContext = new MainViewModel();
             this.SetVersionToTitle();
+            this.DataContext = new MainViewModel();
         }
 
         private void SetVersionToTitle()
