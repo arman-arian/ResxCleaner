@@ -304,6 +304,12 @@ namespace ResxCleaner.ViewModel
         {
             try
             {
+                if (string.IsNullOrEmpty(this.ResourceFile))
+                    throw new ParseException("Resource file path is not valid.");
+
+                if(string.IsNullOrEmpty(ProjectFolder))
+                    throw new ParseException("Project folder path is not valid.");
+
                 this.Working = true;
 
                 this.PopulateSearchList();
@@ -454,8 +460,8 @@ namespace ResxCleaner.ViewModel
                 var count = stringsToDelete.Count;
                 this.Status = "Deleting " + count + " unused resource(s)...";
 
-                RemoveFromResx(stringsToDelete);
                 RemoveFromProject(stringsToDelete);
+                RemoveFromResx(stringsToDelete);
                 RemoveFromResourceFolder(stringsToDelete, backup);
                 RemoveFromResourceKeys(stringsToDelete);
                 RemoveFromUnusedResources(stringsToDelete);
@@ -548,7 +554,16 @@ namespace ResxCleaner.ViewModel
                 throw new ParseException("No project file found.");
             }
 
-            var project = new Project(projectFile);
+            Project project;
+            try
+            {
+                project = new Project(projectFile);
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new ParseException("Save project and try again.", ex);
+            }
+            
             var noneItemGroups = project.GetItems("None").ToList();
             for (var i = noneItemGroups.Count - 1; i >= 0; i--)
             {
